@@ -1,0 +1,46 @@
+# This is a sample build configuration for Java (Gradle).
+# Check our guides at https://confluence.atlassian.com/x/zd-5Mw for more examples.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+image: java:8
+
+pipelines:
+  default:
+    - step:
+        name: Running unit test
+        caches:
+          - gradle
+        script: # Modify the commands below to build your repository.
+          # You must commit the Gradle wrapper to your repository
+          # https://docs.gradle.org/current/userguide/gradle_wrapper.html
+          - bash ./gradlew test
+    - step:
+        name: Running integration test
+        script: # Run integration test
+          - bash ./gradlew integrationTest
+    - step:
+        name: Create docker image
+        services:
+          - docker
+        script:
+          # Build image
+          - bash ./gradlew assemble docker
+          - docker images
+          # Set $DOCKER_HUB_USERNAME and $DOCKER_HUB_PASSWORD as environment variables in repository settings
+          - export IMAGE_NAME=$DOCKER_HUB_USERNAME/$DOCKER_HUB_IMAGE_NAME
+          # authenticate with the Docker Hub registry
+          - docker login --username $DOCKER_HUB_USERNAME --password $DOCKER_HUB_PASSWORD
+          # push the new Docker image to the Docker registry
+          - docker push $IMAGE_NAME
+    - step:
+        name: Deploy integration environment to heroku
+        services:
+          - docker
+        image: atlassian/default-image:latest
+        deployment: test
+        script:
+          - docker pull $DOCKER_HUB_USERNAME/$DOCKER_HUB_IMAGE_NAME:latest
+          - docker login --username $HEROKU_EMAIL_ADDRESS --password $HEROKU_API_KEY registry.heroku.com
+          - docker tag $DOCKER_HUB_USERNAME/$DOCKER_HUB_IMAGE_NAME:latest  registry.heroku.com/randomator-staging/web
+          - docker push registry.heroku.com/randomator-staging/web

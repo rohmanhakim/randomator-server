@@ -1,0 +1,1 @@
+web: docker run -e PORT -p 8080:$PORT -t rohmanhakim/randomator-server
