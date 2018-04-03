@@ -1,0 +1,35 @@
+language: java
+sudo: required
+
+services:
+  - docker
+jobs:
+  include:
+    - stage: unit tests
+      script:
+      - bash ./gradlew test
+    - stage: integration tests
+      script:
+      - bash ./gradlew integrationTest
+    - stage: build docker image
+      script:
+      # Build image
+      - bash ./gradlew assemble docker
+      - docker images
+      # Set $DOCKER_HUB_USERNAME and $DOCKER_HUB_PASSWORD as environment variables in repository settings
+      - export IMAGE_NAME=$DOCKER_HUB_USERNAME/$DOCKER_HUB_IMAGE_NAME
+      # authenticate with the Docker Hub registry
+      - docker login --username $DOCKER_HUB_USERNAME --password $DOCKER_HUB_PASSWORD
+      # push the new Docker image to the Docker registry
+      - docker push $IMAGE_NAME
+    - stage: deploy to staging
+      script: skip
+      deploy:
+        provider: script
+        script:
+        - docker pull $DOCKER_HUB_USERNAME/$DOCKER_HUB_IMAGE_NAME:latest
+        - docker login --username $HEROKU_EMAIL_ADDRESS --password $HEROKU_API_KEY registry.heroku.com
+        - docker tag $DOCKER_HUB_USERNAME/$DOCKER_HUB_IMAGE_NAME:latest  registry.heroku.com/randomator-staging/web
+        - docker push registry.heroku.com/randomator-staging/web
+        on:
+            branch: master

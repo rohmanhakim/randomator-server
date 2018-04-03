@@ -53,7 +53,7 @@ docker {
 			'jar_file': "${jar.archiveName}",
 			'active_environment': "${System.env.ACTIVE_ENVIRONMENT}",
 			'port': "8080",
-			'jasypt_encryptor_integration_password': "${System.env.JASYPT_ENCRYPTOR_INTEGRATION_PASSWORD}"
+			'jasypt_encryptor_staging_password': "${System.env.JASYPT_ENCRYPTOR_INTEGRATION_PASSWORD}"
 	])
 }
 
